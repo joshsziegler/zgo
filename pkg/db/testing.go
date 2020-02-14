@@ -54,3 +54,30 @@ func SetupTestingDatabase(t *testing.T, config Config, scriptPath string) *sqlx.
 	database := MustConnect(config)
 	return database
 }
+
+// SetupBenchmarkDatabase creates and returns an empty database, using the the
+// database name foo_test, where 'foo' is the name in the config.
+func SetupBenchmarkDatabase(b *testing.B, config Config, scriptPath string) *sqlx.DB {
+	// 1. Use the default database name but add _test to avoid overwriting data
+	config.DBName += "_test"
+	// 2. Load our schema file from file to create an empty database
+	cmd := exec.Command("mysql", config.DBName)
+	script, err := os.Open(scriptPath)
+	if err != nil {
+		b.Fatalf("error reading MySQL script: %s\n", err)
+	}
+	// Push the script in via standard input
+	cmd.Stdin = script
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	// 2. Run the schema file against the database
+	err = cmd.Run()
+	if err != nil {
+		b.Fatalf("error creating testing database from schema:\n%s\n%s\n%s\n",
+			err, stdout.String(), stderr.String())
+	}
+	// 3. Connect to the newly created database
+	database := MustConnect(config)
+	return database
+}
