@@ -42,15 +42,16 @@ import (
 	e "github.com/joshsziegler/zgo/pkg/environment"
 )
 
-// Init sets the prefix depending on the environment (dev, test, or prod).
+
+var env int = e.Test // current environment level; default to test
+
+// Init sets the environment level (i.e. dev, test, or prod).
 func Init(environment int) {
 	env = environment
 	if env == e.Prod {
 		log.SetFlags(0)
 	}
 }
-
-var env int
 
 // Info logs a normal, informative message if not in testing. For information
 // that should not be logged in production, used Debug() instead.
@@ -74,7 +75,7 @@ func Debug(args ...interface{}) {
 }
 
 func Debugf(format string, args ...interface{}) {
-	if env != e.Dev {
+	if env == e.Dev {
 		log.Print("D: " + fmt.Sprintf(format, args...))
 	}
 }
