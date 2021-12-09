@@ -1,87 +1,74 @@
-// Package log provides four levels of logging: Info, Debug, Error, and Fatal
-// along with the format versions (e.g. Info() and Infof()). These print the
-// log level in front of each message as a single character. This keeps the log
-// messages shorter, but still easy to skim for errors or debug messages.
+// log provides opinionated, simplified defaults. 
 //
-// The logger will add a the current date and time when running in development
-// or testing environments. In production, only the message type prefix and
-// message is printed. We assume the system's logger will add or store the date
-// and time to each message (e.g. like syslog and systemd do).
+// - Two logging modes: prod (default), and debug. 
+//   See the table below for what is output for each mode. 
+// - To turn on debug logging, set the environment variable 'DEBUG=TRUE'
+// - Date and time are not appended (we assume they are provided by the backend logger such as SystemD).
+// - Log level is output as a single character to make lines shorter and more scannable.
+//
+//
+//        Info  Error  Fatal  Debug
+// Prod   Y     Y      Y      
+// Debug  Y     Y      Y      Y
+//
 //
 // Example 1:
-//    log.Init(environment.Dev)
-//    log.Info("Hello")
-//    2019/12/30 16:14:10 I: Hello
-//
-// Example 2:
-//    log.Init(environment.Prod)
-//    log.Info("Hello")
-//    I: Hello
-//
-// Example 3:
-//     log.Init(environment.Prod)
-//     log.Info("Showing other message prefixes")
-//     I: Showing other message prefixes
+//     log.Info("Hello")
+//     I: Hello
+//     log.Error("Flux capacitor not fluxxing")
+//     E: Flux capacitor not fluxxing
 //     log.Debug("Showing other message prefixes")
-//     [ Debug messages are not printed in production! ]
-//     log.Error("Showing other message prefixes")
-//     E: Showing other message prefixes
-//
-// Example 4:
-//     log.Inif(environment.Prod)
+//     [ Debug messages are not printed in production. ]
 //     log.Infof("Using formatting for variable Foo: %+v", foo)
 //     I: Using formatting for variable Foo: FooStruct{Bar: 5, Valid: True}
 //
+// Example 2:
+//     export DEBUG=TRUE
+//     log.Info("Hello")
+//     I: Hello
+//     log.Debug("connecting to database")
+//     D: connecting to database
 
 package log
 
 import (
 	"fmt"
 	"log"
-
-	e "github.com/joshsziegler/zgo/pkg/environment"
 )
 
 
-var env int = e.Test // current environment level; default to test
+var debug bool
 
-// Init sets the environment level (i.e. dev, test, or prod).
-func Init(environment int) {
-	env = environment
-	if env == e.Prod {
-		log.SetFlags(0)
-	}
+func init() {
+    debug := strings.ToLower(strings.Trim(os.Getenv("debug"))) == "true"
+	log.SetFlags(0) // Disable default flags to hide datetime and level prefixes
 }
 
-// Info logs a normal, informative message if not in testing. For information
-// that should not be logged in production, used Debug() instead.
+// Info logs a normal, informative message. 
+// For information that should not be logged in production, used Debug() instead.
 func Info(args ...interface{}) {
-	if env != e.Test {
-		log.Print("I: " + fmt.Sprint(args...))
-	}
+    log.Print("I: " + fmt.Sprint(args...))
 }
 
 func Infof(format string, args ...interface{}) {
-	if env != e.Test {
-		log.Print("I: " + fmt.Sprintf(format, args...))
-	}
+    log.Print("I: " + fmt.Sprintf(format, args...))
 }
 
-// Debug logs a message that should only be shown only in development.
+// Debug logs a message that should only be shown only in debug.
 func Debug(args ...interface{}) {
-	if env == e.Dev {
+	if debug {
 		log.Print("D: " + fmt.Sprint(args...))
 	}
 }
 
 func Debugf(format string, args ...interface{}) {
-	if env == e.Dev {
+	if debug {
 		log.Print("D: " + fmt.Sprintf(format, args...))
 	}
 }
 
-// Error logs a message that is a recoverable error. For unrecoverable errors,
-// use Fatal() instead.
+// Error logs a message that is a recoverable error. 
+// For unrecoverable errors, use Fatal() instead.
 func Error(args ...interface{}) {
 	log.Print("E: " + fmt.Sprint(args...))
 }
@@ -90,8 +77,8 @@ func Errorf(format string, args ...interface{}) {
 	log.Print("E: " + fmt.Sprintf(format, args...))
 }
 
-// Fatal logs an unrecoverable error. For recoverable errors, use Error()
-// instead.
+// Fatal logs an unrecoverable error. 
+// For recoverable errors, use Error() instead.
 func Fatal(args ...interface{}) {
 	log.Fatal("F: " + fmt.Sprint(args...))
 }
