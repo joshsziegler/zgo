@@ -41,7 +41,7 @@ import (
 var debug bool
 
 func init() {
-	debug := strings.ToLower(strings.TrimSpace(os.Getenv("debug"))) == "true"
+	debug = strings.ToLower(strings.TrimSpace(os.Getenv("debug"))) == "true"
 	log.SetFlags(0) // Disable default flags to hide datetime and level prefixes
 }
 
